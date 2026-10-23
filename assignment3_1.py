@@ -2,7 +2,6 @@
 import sys
 from collections import Counter,defaultdict
 from itertools import combinations
-import time
 
 #file openenn en in een lijst van sets zetten
 def read_data(filepath):
@@ -43,11 +42,24 @@ def generate_and_count_candidates(frequent_l_previous, publications, support, k)
         counts = Counter()
         for pub in publications:
             for pair in combinations(pub, 2):
-                counts[frozenset(pair)] += 1
+                counts[frozenset(pair)] += 1  
         return {itemset: count for itemset, count in counts.items() if count >= support}
 
 
     # Stap 1: genereer kandidaten door sets uit L_{k-1} te combineren
+    '''
+    candidates = set()
+    for itemset1 in frequent_l_previous:
+    for itemset2 in frequent_l_previous:
+        # Combineer twee sets
+        union = itemset1 | itemset2
+        
+        # Voeg alleen toe als de gecombineerde set exact lengte k heeft
+        # (wat betekent dat ze exact k-2 elementen delen)
+        if len(union) == k:
+            candidates.add(union) 
+    '''
+        
     groups = defaultdict(list)
     for itemset in frequent_l_previous:
         s = tuple(sorted(itemset))               # frozenset -> gesorteerd tuple
@@ -84,6 +96,8 @@ def generate_and_count_candidates(frequent_l_previous, publications, support, k)
 
 def maximal_author_sets(frequent):
     """Per grootte k: hoogste support, aantal sets met die support, en een voorbeeld."""
+
+    #per k sorten en in een dict zetten
     by_size = defaultdict(dict)
     for itemset, count in frequent.items():
         by_size[len(itemset)][itemset] = count
@@ -92,9 +106,8 @@ def maximal_author_sets(frequent):
     for k, sets in sorted(by_size.items()):
         best = max(sets.values())
         winners = [s for s, c in sets.items() if c == best]
-        summary[k] = (best, len(winners), winners[0])
+        summary[k] = (best, len(sets), winners[0])
     return summary
-
 
 def apriori(publications, support):
     """Geeft een dict terug met alle frequente auteursets en hun frequentie."""
@@ -106,16 +119,14 @@ def apriori(publications, support):
 
     k = 2
     while frequent_l:
-        t0 = time.time()
         frequent_l = generate_and_count_candidates(frequent_l, publications, support, k)
         result.update(frequent_l)
-        #print(f"k={k}: {len(frequent_l)} frequente sets ({time.time()-t0:.1f}s)")
         k += 1
 
     return result
 
 def main():
-   # Controleer of beide argumenten zijn meegegeven
+    # Controleer of beide argumenten zijn meegegeven
     if len(sys.argv) < 3:
         print("Gebruik: python script.py <filepath> <support>")
         sys.exit(1)
